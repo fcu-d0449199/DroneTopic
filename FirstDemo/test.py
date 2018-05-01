@@ -1,10 +1,10 @@
 import cv2
 from feature_matching import FeatureMatching
 
-#goal image
+#camera's image
 img_train = cv2.imread('./2.jpg')
 
-#camera's image
+#goal image
 query_image = cv2.imread('./1.jpg')
 matching = FeatureMatching(query_image='./1.jpg')
 
