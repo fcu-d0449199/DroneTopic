@@ -203,7 +203,8 @@ class FeatureMatching:
         #print(x, y)
 
         #Calculate size
-        print 'size:', abs(np.int32(dst_corners[2][0][0]) - np.int32(dst_corners[0][0][0])) / h * 100, '%'
+        (H, W) = query_image.shape[:2]
+        print 'size:', abs(np.int32(dst_corners[2][0][0]) - np.int32(dst_corners[0][0][0])) / W * 100, '%'
 
         plt.subplot(2, 2, 4)
         plt.title('position inf')
