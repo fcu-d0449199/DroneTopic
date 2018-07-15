@@ -21,8 +21,11 @@ if not connection_string:
 
 # Connect to the Vehicle
 print('Connecting to vehicle on: %s' % connection_string)
+print("(Connecting to vehicle on: /dev/ttyAMA0)")
 f.write("\n Connecting to vehicle on: %s" % connection_string)
-vehicle = connect(connection_string, wait_ready=True, baud=921600)
+f.write("\n (Connecting to vehicle on: /dev/ttyAMA0)")
+vehicle = connect('/dev/ttyAMA0', wait_ready=True, baud=57600)
+# vehicle = connect(connection_string, wait_ready=True, baud=921600)
 
 
 # Function to arm and then takeoff to a user specified altitude
