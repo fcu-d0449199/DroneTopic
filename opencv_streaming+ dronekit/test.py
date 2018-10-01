@@ -31,7 +31,10 @@ if not connection_string:
 # Connect to the Vehicle
 print('Connecting to vehicle on: %s' % connection_string)
 f.write("\n Connecting to vehicle on: %s" % connection_string)
-vehicle = connect(connection_string, wait_ready=True, baud=921600)
+print("(Connecting to vehicle on: /dev/ttyAMA0)")
+f.write("\n (Connecting to vehicle on: /dev/ttyAMA0)")
+vehicle = connect('/dev/ttyAMA0', wait_ready=True, baud=57600)
+# vehicle = connect(connection_string, wait_ready=True, baud=921600)
 
 # check it real reaching
 def goto(gps_location):
@@ -176,7 +179,6 @@ def real_condition_yaw():
     condition_yaw(0)
     print("Velocity North")
     f.write("\n Velocity North")
-    send_ned_velocity(NORTH, 0, 0, DURATION)
     send_ned_velocity(0, 0, 0, 1)
 
     while True:
