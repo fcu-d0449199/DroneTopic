@@ -2,10 +2,11 @@ import cv2
 from feature_matching import FeatureMatching
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 from pymavlink import mavutil # Needed for command message definitions
+import threading
 import time
 import math
 from math import *
-
+		
 # Create a timestamped file to log the data
 timestr = time.strftime("%Y_%m%d-%H_%M_%S")
 filename = "flight_" + timestr + ".txt"
@@ -216,12 +217,21 @@ try:
 except:
     print "problem opening input stream"
     f.write("\n problem opening input stream")
-
+	
+def worker():
+	while(VideoStream.isOpened()):
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+			break
+		# Capture frame-by-frame
+		ret, frame = VideoStream.read()
+		if ret == True:
+			# Display the resulting frame
+			cv2.imshow("camera's streaming video", frame)
+		
+threading.Thread(target= worker).start()
+	
 FailTime = 0
 while(VideoStream.isOpened()):
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
     # Still can not find the goal
     if (correct == -2 and FailTime == 7):
         vehicle.mode = VehicleMode("RTL")
@@ -246,8 +256,6 @@ while(VideoStream.isOpened()):
     # Capture frame-by-frame
     ret, frame = VideoStream.read()
     if ret == True:
-        # Display the resulting frame
-        cv2.imshow("camera's streaming video", frame)
         # write the frame
         timestr = time.strftime("%Y_%m%d-%H_%M_%S")
         ImageName = "image_" + timestr + "__" + str(times + 1) + ".jpg"
