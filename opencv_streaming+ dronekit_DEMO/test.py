@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import cv2
 from feature_matching import FeatureMatching
 from dronekit import connect, VehicleMode, LocationGlobalRelative
@@ -6,6 +9,9 @@ import threading
 import time
 import math
 from math import *
+import traceback
+
+traceback.print_exc()
 		
 # Create a timestamped file to log the data
 timestr = time.strftime("%Y_%m%d-%H_%M_%S")
@@ -35,7 +41,7 @@ f.write("\n Connecting to vehicle on: %s" % connection_string)
 vehicle = connect(connection_string, wait_ready=True, baud=921600)
 
 # check it real reaching
-def goto(gps_location):
+def goto(gps_location, UpOrDown):
     #print("\n Arming motors")
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
@@ -45,13 +51,19 @@ def goto(gps_location):
         #print("\n  Waiting for arming...")
         time.sleep(1)
 
-    vehicle.simple_goto(gps_location)
+    vehicle.airspeed = 3
+    gps_location = LocationGlobalRelative(gps_location.lat, gps_location.lon, gps_location.alt)
+    vehicle.simple_goto(gps_location, groundspeed=5)
+    vehicle.flush()
 
     while True:
         print("correct goal position...")
         f.write("\n correct goal position...")
-        loc = vehicle.location.global_relative_frame #get current location
-        if (loc.alt <= gps_location.alt + 0.5 or loc.alt >= gps_location.alt - 0.5):
+
+        # Up == 1; Down == -1
+        if UpOrDown == 1 and vehicle.location.global_relative_frame.alt >= gps_location.alt * 0.95:
+            break
+        elif UpOrDown == -1 and vehicle.location.global_relative_frame.alt <= gps_location.alt * 1.05:
             break
         time.sleep(2)
 
@@ -72,6 +84,7 @@ def arm_and_takeoff(aTargetAltitude):
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
+    vehicle.flush()
 
     # Confirm vehicle armed before attempting to take off
     while not vehicle.armed:
@@ -193,6 +206,10 @@ def real_condition_yaw():
 # Set altitude to 5 meters above the current altitude
 arm_and_takeoff(5)
 
+print("\n Set default/target airspeed to 3.")
+f.write("\n\n Set default/target airspeed to 3.")
+vehicle.airspeed = 3
+
 print("\n Set groundspeed to 5m/s.")
 f.write("\n\n Set groundspeed to 5m/s.")
 vehicle.groundspeed=5
@@ -253,89 +270,97 @@ while(VideoStream.isOpened()):
     # Let the head face north
     real_condition_yaw()
 
-    # Capture frame-by-frame
-    ret, frame = VideoStream.read()
-    if ret == True:
-        # write the frame
-        timestr = time.strftime("%Y_%m%d-%H_%M_%S")
-        ImageName = "image_" + timestr + "__" + str(times + 1) + ".jpg"
-        cv2.imwrite(ImageName, frame)
-        print("\n save picture" + str(times + 1) + "...\n")
-        f.write("\n  save picture" + str(times + 1) + "...\n")
-        times += 1
-
-        # camera's image
-        img_train = cv2.imread('./' + ImageName)
-        # goal image
-        if (correct < 3):
-            print(ImageName + " compare to Goal_1.jpg")
-            f.write("\n " + ImageName + " compare to Goal_1.jpg")
-            query_image = cv2.imread('./Goal_1.jpg')
-            matching = FeatureMatching(query_image='./Goal_1.jpg')
-        else:
-            print(ImageName + " compare to Goal_2.jpg")
-            f.write("\n " + ImageName + " compare to Goal_2.jpg")
-            query_image = cv2.imread('./Goal_2.jpg')
-            matching = FeatureMatching(query_image='./Goal_2.jpg')
-
-        m, x, y = matching.match(img_train, query_image)
-        if (m == False):
-            print("not match!!!\n")
-            f.write("\n not match!!!")
-
-            # Because it's first time, maybe the goal not in the vision, so go higher!
-            if(correct <= 0 and correct > -2):
-                loc.alt = loc.alt + 1
-                goto(loc)
-                correct += -1
-
-            FailTime += 1
-
-        # got the goal position
-        else:
-            # Set mode to guided - this is optional as the simple_goto method will change the mode if needed.
-            vehicle.mode = VehicleMode("GUIDED")
-            # correct the position and reduce the altitude
+    while True:
+        try:
             loc = vehicle.location.global_relative_frame  # get current location
-            # Latitude: 1 deg = 110.574 km = 110.574 * 100000 cm
-            # Longitude: 1 deg = 111.320*cos(latitude) km = 111.320*cos(latitude) * 100000 cm
-            # 1 pixel = 0.02645833 cm
-            loc.lat = loc.lat + ((y*0.02645833) / (110.574*100000))
-            loc.lon = loc.lon + ((x*0.02645833) / (111.320*cos(loc.lat) * 100000))
-            loc.alt = loc.alt - 1
-            goto(loc)
+            print("%s" % loc)
+            f.write("%s\n\n" % loc)
+            # Capture frame-by-frame
+            ret, frame = VideoStream.read()
+            if ret == True:
+                # write the frame
+                timestr = time.strftime("%Y_%m%d-%H_%M_%S")
+                ImageName = "image_" + timestr + "__" + str(times + 1) + ".jpg"
+                cv2.imwrite(ImageName, frame)
+                print("\n save picture" + str(times + 1) + "...\n")
+                f.write("\n  save picture" + str(times + 1) + "...\n")
 
-            print ">>correct:",
-            f.write("\n >>correct:")
-            if(x == 0 and y == 0):
-                print "mission clear!!!\n"
-                f.write("mission clear!!!\n")
-            else:
-                if (x < 0):
-                    print "south",
-                    f.write("south")
-                    if(y != 0):
-                        print ", ",
-                        f.write(", ")
-                elif (x > 0):
-                    print "north",
-                    f.write("north")
-                    if (y != 0):
-                        print ", ",
-                        f.write(", ")
-                if (y < 0):
-                    print("west\n")
-                    f.write("west\n")
-                elif (y > 0):
-                    print("east\n")
-                    f.write("east\n")
+                # camera's image
+                img_train = cv2.imread('./' + ImageName)
+                # goal image
+                if (correct < 3):
+                    print(ImageName + " compare to Goal_1.jpg")
+                    f.write("\n " + ImageName + " compare to Goal_1.jpg")
+                    query_image = cv2.imread('./Goal_1.jpg')
+                    matching = FeatureMatching(query_image='./Goal_1.jpg')
                 else:
-                    print("\n")
-                    f.write("\n")
-            correct += 1
+                    print(ImageName + " compare to Goal_2.jpg")
+                    f.write("\n " + ImageName + " compare to Goal_2.jpg")
+                    query_image = cv2.imread('./Goal_2.jpg')
+                    matching = FeatureMatching(query_image='./Goal_2.jpg')
 
+                m, x, y = matching.match(img_train, query_image)
+                break
+        except:
+            print("This picture cannot be taken any special point, and will be tried again.\n")
+            f.write("\n This picture cannot be taken any special point, and will be tried again.\n")
+            time.sleep(1)
+    times += 1
+
+    if (m == False):
+        print("not match!!!\n")
+        f.write("\n not match!!!\n")
+
+        # Because it's first time, maybe the goal not in the vision, so go higher!
+        if(correct <= 0 and correct > -2):
+            loc.alt = loc.alt + 1
+            goto(loc,1)
+            correct += -1
+
+        FailTime += 1
+
+    # got the goal position
     else:
-        break
+        # Set mode to guided - this is optional as the simple_goto method will change the mode if needed.
+        vehicle.mode = VehicleMode("GUIDED")
+        # correct the position and reduce the altitude
+        loc = vehicle.location.global_relative_frame  # get current location
+        # Latitude: 1 deg = 110.574 km = 110.574 * 100000 cm
+        # Longitude: 1 deg = 111.320*cos(latitude) km = 111.320*cos(latitude) * 100000 cm
+        # 1 pixel = 0.02645833 cm
+        loc.lat = loc.lat + ((y*0.02645833) / (110.574*100000))
+        loc.lon = loc.lon + ((x*0.02645833) / (111.320*cos(loc.lat) * 100000))
+        loc.alt = loc.alt - 1
+        goto(loc,-1)
+
+        print ">>correct:",
+        f.write("\n >>correct:")
+        if(x == 0 and y == 0):
+            print "mission clear!!!\n"
+            f.write("mission clear!!!\n")
+        else:
+            if (x < 0):
+                print "south",
+                f.write("south")
+                if(y != 0):
+                    print ", ",
+                    f.write(", ")
+            elif (x > 0):
+                print "north",
+                f.write("north")
+                if (y != 0):
+                    print ", ",
+                    f.write(", ")
+            if (y < 0):
+                print("west\n")
+                f.write("west\n")
+            elif (y > 0):
+                print("east\n")
+                f.write("east\n")
+            else:
+                print("\n")
+                f.write("\n")
+        correct += 1
 
 # When everything done, release the capture
 VideoStream.release()
