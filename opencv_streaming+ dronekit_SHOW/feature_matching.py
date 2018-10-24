@@ -193,15 +193,15 @@ class FeatureMatching:
 
         #draw the line
         cv2.line(img_dst2, center, p_center, (256, 256, 3), 5)
-        #if (np.int32(center[1]) - np.int32(p_center[1]) == 1 and np.int32(center[0]) - np.int32(p_center[0]) == 1): print('mission clear!!!')
-        #else:
-        #    if(np.int32(p_center[1]) - np.int32(center[1]) + 1 > 0): print '>>down:', np.int32(p_center[1]) - np.int32(center[1]) + 1
-        #    elif(np.int32(p_center[1]) - np.int32(center[1]) + 1 < 0): print '>>up:', np.int32(center[1]) - np.int32(p_center[1]) - 1
-        #    if(np.int32(p_center[0]) - np.int32(center[0]) + 1 > 0): print '>>right:', np.int32(p_center[0]) - np.int32(center[0]) + 1
-        #    elif(np.int32(p_center[0]) - np.int32(center[0]) + 1 < 0): print '>>left:', np.int32(center[0]) - np.int32(p_center[0]) - 1
+        # if (np.int32(center[1]) - np.int32(p_center[1]) == 1 and np.int32(center[0]) - np.int32(p_center[0]) == 1): print('mission clear!!!')
+        # else:
+        #     if(np.int32(p_center[1]) - np.int32(center[1]) + 1 > 0): print '>>down:', np.int32(p_center[1]) - np.int32(center[1]) + 1
+        #     elif(np.int32(p_center[1]) - np.int32(center[1]) + 1 < 0): print '>>up:', np.int32(center[1]) - np.int32(p_center[1]) - 1
+        #     if(np.int32(p_center[0]) - np.int32(center[0]) + 1 > 0): print '>>right:', np.int32(p_center[0]) - np.int32(center[0]) + 1
+        #     elif(np.int32(p_center[0]) - np.int32(center[0]) + 1 < 0): print '>>left:', np.int32(center[0]) - np.int32(p_center[0]) - 1
         x = np.int32(p_center[0]) - np.int32(center[0]) + 1
         y = np.int32(center[1]) - np.int32(p_center[1]) - 1
-        #print(x, y)
+        # print(x, y)
 
         #Calculate size
         #(H, W) = query_image.shape[:2]
@@ -213,7 +213,8 @@ class FeatureMatching:
         plt.imshow(img_dst2)
 
         plt.show(block=False)
-        plt.pause(1)
+        plt.pause(2)
+        plt.close()
 
         #img_center = self._center_keypoints(frame, key_train, good_matches)
         #plt.imshow(img_center)

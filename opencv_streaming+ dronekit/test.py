@@ -339,22 +339,22 @@ while (VideoStream.isOpened()):
             print "mission clear!!!\n"
             f.write("mission clear!!!\n")
         else:
-            if (x < 0):
+            if (y < 0):
                 print "south",
                 f.write("south")
-                if (y != 0):
+                if (x != 0):
                     print ", ",
                     f.write(", ")
-            elif (x > 0):
+            elif (y > 0):
                 print "north",
                 f.write("north")
-                if (y != 0):
+                if (x != 0):
                     print ", ",
                     f.write(", ")
-            if (y < 0):
+            if (x < 0):
                 print("west\n")
                 f.write("west\n")
-            elif (y > 0):
+            elif (x > 0):
                 print("east\n")
                 f.write("east\n")
             else:

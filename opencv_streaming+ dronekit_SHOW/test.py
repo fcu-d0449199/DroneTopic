@@ -15,8 +15,8 @@ traceback.print_exc()
 		
 # Create a timestamped file to log the data
 timestr = time.strftime("%Y_%m%d-%H_%M_%S")
-filename = "flight_" + timestr + ".txt"
-f = open(filename, "w+")
+# filename = "flight_" + timestr + ".txt"
+# f = open(filename, "w+")
 
 # Set up option parsing to get connection string
 import argparse
@@ -37,11 +37,11 @@ if not connection_string:
 
 # Connect to the Vehicle
 print('Connecting to vehicle on: %s' % connection_string)
-f.write("\n Connecting to vehicle on: %s" % connection_string)
+# f.write("\n Connecting to vehicle on: %s" % connection_string)
 vehicle = connect(connection_string, wait_ready=True, baud=921600)
 
 # check it real reaching
-def goto(gps_location, UpOrDown):
+def goto(gps_location):
     #print("\n Arming motors")
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
@@ -58,12 +58,11 @@ def goto(gps_location, UpOrDown):
 
     while True:
         print("correct goal position...")
-        f.write("\n correct goal position...")
+        # f.write("\n correct goal position...")
 
-        # Up == 1; Down == -1
-        if UpOrDown == 1 and vehicle.location.global_relative_frame.alt >= gps_location.alt * 0.95:
-            break
-        elif UpOrDown == -1 and vehicle.location.global_relative_frame.alt <= gps_location.alt * 1.05:
+        # range in 50 cm
+        if (abs((vehicle.location.global_relative_frame.lat - gps_location.lat) / (110.574*100000)) <= 50 and
+            abs((vehicle.location.global_relative_frame.lon - gps_location.lon) / (111.320*cos(loc.lat) * 100000)) <= 50):
             break
         time.sleep(2)
 
@@ -72,15 +71,15 @@ def arm_and_takeoff(aTargetAltitude):
     Arms vehicle and fly to aTargetAltitude.
     """
     print("\n Basic pre-arm checks")
-    f.write("\n\n Basic pre-arm checks")
+    # f.write("\n\n Basic pre-arm checks")
     # Don't try to arm until autopilot is ready
     while not vehicle.is_armable:
         print("\n  Waiting for vehicle to initialise...")
-        f.write("\n\n Waiting for vehicle to initialise...")
+        # f.write("\n\n Waiting for vehicle to initialise...")
         time.sleep(1)
 
     print("\n Arming motors")
-    f.write("\n\n Arming motors")
+    # f.write("\n\n Arming motors")
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
@@ -89,22 +88,22 @@ def arm_and_takeoff(aTargetAltitude):
     # Confirm vehicle armed before attempting to take off
     while not vehicle.armed:
         print("\n  Waiting for arming...")
-        f.write("\n\n Waiting for arming...")
+        # f.write("\n\n Waiting for arming...")
         time.sleep(1)
 
     print("\n Taking off!")
-    f.write("\n\n Taking off!")
+    # f.write("\n\n Taking off!")
     vehicle.simple_takeoff(aTargetAltitude)  # Take off to target altitude
 
     # Wait until the vehicle reaches a safe height before processing the goto (otherwise the command
     #  after Vehicle.simple_takeoff will execute immediately).
     while True:
         print("\n  Altitude: %s " % vehicle.location.global_relative_frame.alt)
-        f.write("\n\n  Altitude: %s " % vehicle.location.global_relative_frame.alt)
+        # f.write("\n\n  Altitude: %s " % vehicle.location.global_relative_frame.alt)
         # Break and return from function just below target altitude.
         if vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
             print("\n Reached target altitude")
-            f.write("\n\n Reached target altitude")
+            # f.write("\n\n Reached target altitude")
             break
         time.sleep(1)
 
@@ -178,62 +177,63 @@ def send_ned_velocity(velocity_x, velocity_y, velocity_z, duration):
 
 # check its head face north
 def real_condition_yaw():
-    #print("\n Arming motors")
+    # print("\n Arming motors")
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
 
     while not vehicle.armed:
-        #print("\n  Waiting for arming...")
+        # print("\n  Waiting for arming...")
         time.sleep(1)
 
     condition_yaw(0)
     print("Velocity North")
-    f.write("\n Velocity North")
+    # f.write("\n Velocity North")
     send_ned_velocity(0, 0, 0, 1)
 
     while True:
         print("Let the head face north...")
-        f.write("\n Let the head face north...")
+        # f.write("\n Let the head face north...")
         if (vehicle.heading == 0):
             break
         time.sleep(2)
 
     print("Yaw 0 absolute (North)")
-    f.write("\n Yaw 0 absolute (North)\n\n")
+    # f.write("\n Yaw 0 absolute (North)\n\n")
 
 # main
 # Set altitude to 5 meters above the current altitude
 arm_and_takeoff(5)
 
 print("\n Set default/target airspeed to 3.")
-f.write("\n\n Set default/target airspeed to 3.")
+# f.write("\n\n Set default/target airspeed to 3.")
 vehicle.airspeed = 3
 
 print("\n Set groundspeed to 5m/s.")
-f.write("\n\n Set groundspeed to 5m/s.")
+# f.write("\n\n Set groundspeed to 5m/s.")
 vehicle.groundspeed=5
-DURATION = 20 #Set duration for each segment.
+DURATION = 20 # Set duration for each segment.
 NORTH = 2 # vx > 0 => fly North
 
-loc = vehicle.location.global_relative_frame #get current location
+loc = vehicle.location.global_relative_frame # get current location
 
 # If it's a real mission , that you can fly a path using specific GPS coordinates.
 print("\n Going to GOAL Position")
-f.write("\n\n Going to GOAL Position\n")
-#vehicle.simple_goto(lat, lon, alt)
-#time.sleep(20)
+# f.write("\n\n Going to GOAL Position\n")
+# vehicle.simple_goto(lat, lon, alt)
+# time.sleep(20)
 
 print("\n start correcting goal position:\n")
-f.write("\n start correcting goal position:\n")
-correct = 0
+# f.write("\n start correcting goal position:\n")
+# correct = 0
 times = 0
+GoalNum = 1
 
 try:
     VideoStream = cv2.VideoCapture(0) # index of your camera
 except:
     print "problem opening input stream"
-    f.write("\n problem opening input stream")
+    # f.write("\n problem opening input stream")
 	
 def worker():
 	while(VideoStream.isOpened()):
@@ -247,25 +247,25 @@ def worker():
 		
 threading.Thread(target= worker).start()
 	
-FailTime = 0
+#FailTime = 0
 while(VideoStream.isOpened()):
     # Still can not find the goal
-    if (correct == -2 and FailTime == 7):
-        vehicle.mode = VehicleMode("RTL")
-        print("Returning to Launch")
-        f.write("\n\n Returning to Launch")
-        print("\n Failed")
-        f.write("\n\n Failed")
-        break
+    # if (correct == -2 and FailTime == 7):
+    #    vehicle.mode = VehicleMode("RTL")
+    #    print("Returning to Launch")
+    #    f.write("\n\n Returning to Launch")
+    #    print("\n Failed")
+    #    f.write("\n\n Failed")
+    #    break
 
     # check five times (until plane land)
-    if (correct == 5 or loc.alt == 0):
-        vehicle.mode = VehicleMode("LAND")
-        print("LAND")
-        f.write("\n LAND")
-        print("\n Completed")
-        f.write("\n\n Completed")
-        break
+    # if (correct == 5 or loc.alt == 0):
+    #    vehicle.mode = VehicleMode("LAND")
+    #    print("LAND")
+    #    f.write("\n LAND")
+    #    print("\n Completed")
+    #    f.write("\n\n Completed")
+    #    break
 
     # Let the head face north
     real_condition_yaw()
@@ -274,7 +274,7 @@ while(VideoStream.isOpened()):
         try:
             loc = vehicle.location.global_relative_frame  # get current location
             print("%s" % loc)
-            f.write("%s\n\n" % loc)
+            # f.write("%s\n\n" % loc)
             # Capture frame-by-frame
             ret, frame = VideoStream.read()
             if ret == True:
@@ -283,41 +283,51 @@ while(VideoStream.isOpened()):
                 ImageName = "image_" + timestr + "__" + str(times + 1) + ".jpg"
                 cv2.imwrite(ImageName, frame)
                 print("\n save picture" + str(times + 1) + "...\n")
-                f.write("\n  save picture" + str(times + 1) + "...\n")
+                # f.write("\n  save picture" + str(times + 1) + "...\n")
 
                 # camera's image
-                img_train = cv2.imread('./' + ImageName)
+                # img_train = cv2.imread('./' + ImageName)
+                img_train = cv2.imread('./test_left_down.jpg')
                 # goal image
-                if (correct < 3):
+                if (GoalNum == 1):
                     print(ImageName + " compare to Goal_1.jpg")
-                    f.write("\n " + ImageName + " compare to Goal_1.jpg")
+                    # f.write("\n " + ImageName + " compare to Goal_1.jpg")
                     query_image = cv2.imread('./Goal_1.jpg')
                     matching = FeatureMatching(query_image='./Goal_1.jpg')
-                else:
+                elif (GoalNum == 2):
                     print(ImageName + " compare to Goal_2.jpg")
-                    f.write("\n " + ImageName + " compare to Goal_2.jpg")
+                    # f.write("\n " + ImageName + " compare to Goal_2.jpg")
                     query_image = cv2.imread('./Goal_2.jpg')
                     matching = FeatureMatching(query_image='./Goal_2.jpg')
+                elif (GoalNum == 3):
+                    print(ImageName + " compare to Goal_3.jpg")
+                    # f.write("\n " + ImageName + " compare to Goal_3.jpg")
+                    query_image = cv2.imread('./Goal_3.jpg')
+                    matching = FeatureMatching(query_image='./Goal_3.jpg')
 
                 m, x, y = matching.match(img_train, query_image)
                 break
         except:
             print("This picture cannot be taken any special point, and will be tried again.\n")
-            f.write("\n This picture cannot be taken any special point, and will be tried again.\n")
+            # f.write("\n This picture cannot be taken any special point, and will be tried again.\n")
             time.sleep(1)
     times += 1
 
     if (m == False):
-        print("not match!!!\n")
-        f.write("\n not match!!!\n")
+        if (GoalNum < 3):
+            GoalNum += 1
+        else:
+            GoalNum = 1
+            print("\n>> not match!!! Can not find any goal, please go higher.\n")
+            #f.write("\n not match!!!\n")
 
         # Because it's first time, maybe the goal not in the vision, so go higher!
-        if(correct <= 0 and correct > -2):
-            loc.alt = loc.alt + 1
-            goto(loc,1)
-            correct += -1
+        #if(correct <= 0 and correct > -2):
+        #    loc.alt = loc.alt + 1
+        #    goto(loc,1)
+        #    correct += -1
 
-        FailTime += 1
+        #FailTime += 1
 
     # got the goal position
     else:
@@ -330,37 +340,37 @@ while(VideoStream.isOpened()):
         # 1 pixel = 0.02645833 cm
         loc.lat = loc.lat + ((y*0.02645833) / (110.574*100000))
         loc.lon = loc.lon + ((x*0.02645833) / (111.320*cos(loc.lat) * 100000))
-        loc.alt = loc.alt - 1
-        goto(loc,-1)
+        # loc.alt = loc.alt - 1
+        goto(loc)
 
         print ">>correct:",
-        f.write("\n >>correct:")
+        # f.write("\n >>correct:")
         if(x == 0 and y == 0):
             print "mission clear!!!\n"
-            f.write("mission clear!!!\n")
+            # f.write("mission clear!!!\n")
         else:
             if (y < 0):
                 print "south",
-                f.write("south")
+                # f.write("south")
                 if(x != 0):
                     print ", ",
-                    f.write(", ")
+                    # f.write(", ")
             elif (y > 0):
                 print "north",
-                f.write("north")
+                # f.write("north")
                 if (x != 0):
                     print ", ",
-                    f.write(", ")
+                    # f.write(", ")
             if (x < 0):
                 print("west\n")
-                f.write("west\n")
+                # f.write("west\n")
             elif (x > 0):
                 print("east\n")
-                f.write("east\n")
+                # f.write("east\n")
             else:
                 print("\n")
-                f.write("\n")
-        correct += 1
+                # f.write("\n")
+        # correct += 1
 
 # When everything done, release the capture
 VideoStream.release()
@@ -368,11 +378,11 @@ cv2.destroyAllWindows()
 
 #Close vehicle object before exiting script
 print " Close vehicle object"
-f.write("\n\n Close vehicle object")
+#f.write("\n\n Close vehicle object")
 vehicle.close()
 
 # Shut down simulator if it was started.
 if sitl is not None:
     sitl.stop()
 
-f.close()
+#f.close()
