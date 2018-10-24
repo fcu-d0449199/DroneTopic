@@ -60,9 +60,7 @@ def goto(gps_location):
         print("correct goal position...")
         # f.write("\n correct goal position...")
 
-        # range in 50 cm
-        if (abs((vehicle.location.global_relative_frame.lat - gps_location.lat) / (110.574*100000)) <= 50 and
-            abs((vehicle.location.global_relative_frame.lon - gps_location.lon) / (111.320*cos(loc.lat) * 100000)) <= 50):
+        if vehicle.location.global_relative_frame.alt >= gps_location.alt * 0.95:
             break
         time.sleep(2)
 
@@ -202,8 +200,8 @@ def real_condition_yaw():
     # f.write("\n Yaw 0 absolute (North)\n\n")
 
 # main
-# Set altitude to 5 meters above the current altitude
-arm_and_takeoff(5)
+# Set altitude to 20 meters above the current altitude
+arm_and_takeoff(20)
 
 print("\n Set default/target airspeed to 3.")
 # f.write("\n\n Set default/target airspeed to 3.")
@@ -287,7 +285,7 @@ while(VideoStream.isOpened()):
 
                 # camera's image
                 # img_train = cv2.imread('./' + ImageName)
-                img_train = cv2.imread('./test_left_down.jpg')
+                img_train = cv2.imread('./test_left_up.jpg')
                 # goal image
                 if (GoalNum == 1):
                     print(ImageName + " compare to Goal_1.jpg")
@@ -338,9 +336,9 @@ while(VideoStream.isOpened()):
         # Latitude: 1 deg = 110.574 km = 110.574 * 100000 cm
         # Longitude: 1 deg = 111.320*cos(latitude) km = 111.320*cos(latitude) * 100000 cm
         # 1 pixel = 0.02645833 cm
-        loc.lat = loc.lat + ((y*0.02645833) / (110.574*100000))
-        loc.lon = loc.lon + ((x*0.02645833) / (111.320*cos(loc.lat) * 100000))
-        # loc.alt = loc.alt - 1
+        loc.lat = loc.lat + (((y*0.02645833) / (110.574*100000)) * 10)
+        loc.lon = loc.lon + (((x*0.02645833) / (111.320*cos(loc.lat) * 100000)) * 10)
+        loc.alt = 20
         goto(loc)
 
         print ">>correct:",
