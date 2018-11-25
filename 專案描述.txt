@@ -1,0 +1,41 @@
+https://github.com/fcu-d0449199/DroneTopic
+
+實飛程式：opencv_streaming+ dronekit
+執行test.py→裝置必須架設攝像頭→如未連結上飛機，需有SITL方能啟動。
+(隱藏攝像串流，減少rpi效能消耗。)
+
+模擬用：opencv_streaming+ dronekit_DEMO
+單純電腦連結Mission Planner即可(TCP, 921600, port=127.0.0.1, 5763)，並顯示出攝像串流。
+
+展示用：opencv_streaming+ dronekit_PLAY
+攝像機即飛機，主要利用下兩公式計算出現場、假設實飛高度，拍攝→辨識→MissionPlan校正位置，並到達假設實飛高度(預設5公尺)→顯示資訊包含現場公分高、實際公尺高、水平需前後和左右移動多少公分，同時證明前述動作均完成並賦予繼續鈕，按下才重複執行。
+● 焦距 = ((比對圖實寬 %數) 高) / 實際標靶寬
+● 模擬距離 = (實際標靶寬 焦距) / (比對圖實寬 %數)
+(參考:http://python.jobbole.com/84378/)
+
+安全性測試：Test_TakeOffAndLand.py
+原地起降10m。
+
+舊版想法：
+預設原地上升5公尺，並開始做校正。如第一次檢測都無法抓到目標，先給予上升2次的機會(一次加1公尺)，後持續檢測5次都失敗，return to home！
+1.正常至少檢測5次(每次校正下降1公尺)
+2.最高上限7公尺
+3.到達剩餘2公尺時，切換目標為較大的中心圖(Goal_2)
+4.每次校正機頭方向向北，後抓取攝像畫面
+5.記錄所有動作存取成文字檔，包含每次抓取之畫面紀錄時間後註明序號作為檔名儲存為.jpg檔
+
+新版：
+上升至20公尺，因10公尺範圍內確實準確，故在小於等於10公尺前既使未監測成功，仍保持每公尺下降及辨識直到10公尺高，確定所有均沒成功，才宣告失敗！
+且不論高度所有比對圖庫均加入辨識，預防高度上的圖像誤差。
+準確定義為比對圖形能完整移轉於影像圖中(吻合位置的正方形)，代表抓取中心點正確，勢必額外的高度計算也精準，假設焦距都一致的情況下；反之，可能中心點正確但高度較無參考價值。
+
+
+cf:
+記得將標靶圖(Goal_1.jpg、Goal_2.jpg...)放至執行程式同目錄下！！！
+
+dronekit-python下載
+cd ~
+git clone https://github.com/dronekit/dronekit-python.git
+cd ./dronekit-python
+python setup.py build
+python setup.py install

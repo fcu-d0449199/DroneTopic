@@ -75,7 +75,6 @@ class FeatureMatching:
 
     def match(self, frame, query_image):
         x = y = 0
-        plt.figure(num=1, figsize=(8, 8))
         img_train = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         shape_train = img_train.shape[:2]
 
@@ -85,7 +84,7 @@ class FeatureMatching:
 
         # 為了讓RANSAC方法可以儘快工作，至少需要4個好的匹配，否則視為匹配失敗
         if len(good_matches) < 4:
-            self.num_frames_no_success += 1
+            # self.num_frames_no_success += 1
             return False, x, y
         # 畫出匹配的點
         #img_match = cv2.drawMatchesKnn(self.img_query, self.key_query, img_train, key_train, [good_matches], None,
@@ -99,70 +98,63 @@ class FeatureMatching:
         dst_ravel = dst_corners.ravel()
         if (dst_ravel > shape_train[0] + 20).any() and (dst_ravel > -20).any() \
                 and (dst_ravel > shape_train[1] + 20).any():
-            self.num_frames_no_success += 1
+            # self.num_frames_no_success += 1
             return False, x, y
 
+
+        # 為了加速故加註解忽略過多項的檢測~
         # 如果4個角點沒有圍出一個合理的四邊形，意味著我們可能沒有找到我們的目標。
         # 通過行列式計算四邊形面積
-        area = 0.
-        for i in range(0, 4):
-            D = np.array([[1., 1., 1.],
-                          [dst_corners[i][0][0], dst_corners[(i + 1) % 4][0][0], dst_corners[(i + 2) % 4][0][0]],
-                          [dst_corners[i][0][1], dst_corners[(i + 1) % 4][0][1], dst_corners[(i + 2) % 4][0][1]]])
-            area += abs(np.linalg.det(D)) / 2.
-        area /= 2.
-        # 以下注釋部分是書中的計算方式，我使用時是錯誤的
+        # area = 0.
         # for i in range(0, 4):
-        #     next_i = (i + 1) % 4
-        #     print(dst_corners[i][0][0])
-        #     print(dst_corners[i][0][1])
-        #     area += (dst_corners[i][0][0] * dst_corners[next_i][0][1] - dst_corners[i][0][1] * dst_corners[next_i][0][
-        #         0]) / 2.
+        #     D = np.array([[1., 1., 1.],
+        #                   [dst_corners[i][0][0], dst_corners[(i + 1) % 4][0][0], dst_corners[(i + 2) % 4][0][0]],
+        #                  [dst_corners[i][0][1], dst_corners[(i + 1) % 4][0][1], dst_corners[(i + 2) % 4][0][1]]])
+        #     area += abs(np.linalg.det(D)) / 2.
+        # area /= 2.
         # 如果面積太大或太小，將它排除
-        if area < np.prod(shape_train) / 16. or area > np.prod(shape_train) / 2.:
-            self.num_frames_no_success += 1
-            return False, x, y
+        # if area < np.prod(shape_train) / 16. or area > np.prod(shape_train) / 2.:
+        #     # self.num_frames_no_success += 1
+        #     return False, x, y
 
         # 如果我們此時發現的單應性矩陣和上一次發現的單應性矩陣變化太大，意味著我們可能找到了
         # 另一個對象，這種情況我們丟棄這個幀並返回False
-        # 這裡要用到self.max_frames_no_success的，作用就是距離上一次發現的單應性矩陣
+        # 這裡要用到self.max_frames_no_success的作用就是距離上一次發現的單應性矩陣
         # 不能太久時間，如果時間過長的話，完全可以將上一次的hinv拋棄，使用當前計算得到
         # 的Hinv
-        recent = self.num_frames_no_success < self.max_frames_no_success
-        similar = np.linalg.norm(Hinv - self.last_hinv) < self.max_error_hinv
-        if recent and not similar and not self.first_frame:
-            self.num_frames_no_success += self.num_frames_no_success
-            return False, x, y
+        # recent = self.num_frames_no_success < self.max_frames_no_success
+        # similar = np.linalg.norm(Hinv - self.last_hinv) < self.max_error_hinv
+        # if recent and not similar and not self.first_frame:
+        #     self.num_frames_no_success += self.num_frames_no_success
+        #     return False, x, y
         # 第一次檢測標誌置否
-        self.first_frame = False
-        self.num_frames_no_success = 0
-        self.last_hinv = Hinv
+        # self.first_frame = False
+        # self.num_frames_no_success = 0
+        # self.last_hinv = Hinv
 
-        draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
-                           singlePointColor=None,
+        draw_params = dict(singlePointColor=None,
                            matchesMask=matchesMask,  # draw only inliers
                            flags=2)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        plt.figure(figsize=(8, 8))
+        plt.subplot(2, 2, 2)
+        plt.title("camera's image")
+        plt.imshow(frame)
 
-        img_dst = cv2.polylines(img_train, [np.int32(dst_corners)], True, (0, 255, 255), 5, cv2.LINE_AA)
-        img_dst = cv2.drawMatches(self.img_query, self.key_query, img_dst, key_train, good_matches, None,
+        query_image = cv2.cvtColor(query_image, cv2.COLOR_BGR2RGB)
+        img_dst2 = img_dst = cv2.polylines(frame, [np.int32(dst_corners)], True, (55,255,155), 5, cv2.LINE_AA)
+        img_dst = cv2.drawMatches(query_image, self.key_query, img_dst, key_train, good_matches, None,
                                   **draw_params)
 
-        #query_image = cv2.cvtColor(query_image, cv2.COLOR_BGR2RGB)
-        #plt.subplot(2, 2, 1)
-        #plt.title("goal image")
-        #plt.imshow(query_image)
+        plt.subplot(2, 2, 1)
+        plt.title("goal image")
+        plt.imshow(query_image)
 
-        #plt.subplot(2, 2, 3)
-        #plt.title("match inf")
-        #plt.imshow(img_dst)
+        plt.subplot(2, 2, 3)
+        plt.title("match information")
+        plt.imshow(img_dst)
         #plt.show()
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #plt.subplot(2, 2, 2)
-        #plt.title("camera's image")
-        #plt.imshow(frame)
-
-        img_dst2 = cv2.polylines(frame, [np.int32(dst_corners)], True, (55,255,155), 5, cv2.LINE_AA)
         # mark the picture's center point
         (h, w) = img_dst2.shape[:2]
         center = (w // 2, h // 2)
@@ -176,25 +168,28 @@ class FeatureMatching:
 
         #draw the line
         cv2.line(img_dst2, center, p_center, (256, 256, 3), 5)
-        #if (np.int32(center[1]) - np.int32(p_center[1]) == 1 and np.int32(center[0]) - np.int32(p_center[0]) == 1): print('mission clear!!!')
-        #else:
-        #    if(np.int32(p_center[1]) - np.int32(center[1]) + 1 > 0): print '>>down:', np.int32(p_center[1]) - np.int32(center[1]) + 1
-        #    elif(np.int32(p_center[1]) - np.int32(center[1]) + 1 < 0): print '>>up:', np.int32(center[1]) - np.int32(p_center[1]) - 1
-        #    if(np.int32(p_center[0]) - np.int32(center[0]) + 1 > 0): print '>>right:', np.int32(p_center[0]) - np.int32(center[0]) + 1
-        #    elif(np.int32(p_center[0]) - np.int32(center[0]) + 1 < 0): print '>>left:', np.int32(center[0]) - np.int32(p_center[0]) - 1
+        # if (np.int32(center[1]) - np.int32(p_center[1]) == 1 and np.int32(center[0]) - np.int32(p_center[0]) == 1): print('mission clear!!!')
+        # else:
+        #     if(np.int32(p_center[1]) - np.int32(center[1]) + 1 > 0): print '>>down:', np.int32(p_center[1]) - np.int32(center[1]) + 1
+        #     elif(np.int32(p_center[1]) - np.int32(center[1]) + 1 < 0): print '>>up:', np.int32(center[1]) - np.int32(p_center[1]) - 1
+        #     if(np.int32(p_center[0]) - np.int32(center[0]) + 1 > 0): print '>>right:', np.int32(p_center[0]) - np.int32(center[0]) + 1
+        #     elif(np.int32(p_center[0]) - np.int32(center[0]) + 1 < 0): print '>>left:', np.int32(center[0]) - np.int32(p_center[0]) - 1
         x = np.int32(p_center[0]) - np.int32(center[0]) + 1
         y = np.int32(center[1]) - np.int32(p_center[1]) - 1
-        #print(x, y)
+        # print(x, y)
 
         #Calculate size
-        #(H, W) = query_image.shape[:2]
-        #size = abs(np.int32(dst_corners[2][0][0]) - np.int32(dst_corners[0][0][0])) / W * 100
-        #print 'size:', size, '%'
+        (H, W) = query_image.shape[:2]
+        size = abs(np.int32(dst_corners[2][0][0]) - np.int32(dst_corners[0][0][0])) / W * 100
+        print 'size:', size, '%'
 
-        #plt.subplot(2, 2, 4)
-        #plt.title('position inf')
-        #plt.imshow(img_dst2)
+        plt.subplot(2, 2, 4)
+        plt.title('position information')
+        plt.imshow(img_dst2)
 
-        #plt.show()
+        plt.show()
+        # plt.show(block=False)
+        # plt.pause(2)
+        # plt.close()
 
-        return True, x, y#, size
+        return True, x, y, size

@@ -11,6 +11,7 @@ class FeatureMatching:
         # 建立SURF探測器，並設置Hessian閾值，由於效果不好，我改成了SIFT方法
         # self.min_hessian = 400（surf方法使用）
         # self.surf = cv2.xfeatures2d.SURF_create(min_hessian)
+        # 比對圖SIFT特徵獲取
         self.sift = cv2.xfeatures2d.SIFT_create()
         self.img_query = cv2.imread(query_image, 0)
         # 讀取一個目標模板
@@ -43,6 +44,7 @@ class FeatureMatching:
         key_train, desc_train = sift.detectAndCompute(frame, None)
         return key_train, desc_train
 
+    # FLANN方法特徵匹配
     def _match_features(self, desc_frame):
         # 函數返回一個訓練集和詢問集的一致性列表
         matches = self.flann.knnMatch(self.desc_query, desc_frame, k=2)
@@ -55,6 +57,7 @@ class FeatureMatching:
                 good_matches.append(m)
         return good_matches
 
+    # Homography取得映射公式
     def _detect_corner_points(self, key_frame, good_matches):
         # 將所有好的匹配的對應點的坐標存儲下來
         src_points = np.float32([self.key_query[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
@@ -69,27 +72,6 @@ class FeatureMatching:
         # perspectiveTransform返回點的列表
         dst_corners = cv2.perspectiveTransform(src_corners, H)
         return dst_corners, H, matchesMask
-
-    #def _center_keypoints(self, frame, key_frame, good_matches):
-    #    dst_size = frame.shape[:2]
-        # 將圖片的對象大小縮小到query image的1/2（書裡是train image，和官方命名相反而已）
-    #    scale_row = 1. / self.shape_query[0] * dst_size[0] / 2.
-    #    bias_row = dst_size[0] / 4.
-    #    scale_col = 1. / self.shape_query[1] * dst_size[1] / 2.
-    #    bias_col = dst_size[1] / 4.
-        # 將每個點應用這樣的變換
-    #    src_points = [self.key_query[m.queryIdx].pt for m in good_matches]
-    #    dst_points = [key_frame[m.trainIdx].pt for m in good_matches]
-    #    dst_points = [[x * scale_row + bias_row, y * scale_col + bias_col] for x, y in dst_points]
-    #    Hinv, _ = cv2.findHomography(np.array(src_points), np.array(dst_points), cv2.RANSAC, 5.0)
-    #    img_center = cv2.warpPerspective(frame, Hinv, dst_size, flags=2)
-    #    return img_center
-
-    #def _frontal_keypoints(self, frame, H):
-    #    Hinv = np.linalg.inv(H)
-    #    dst_size = frame.shape[:2]
-    #    img_front = cv2.warpPerspective(frame, Hinv, dst_size, flags=2)
-    #    return img_front
 
     def match(self, frame, query_image):
         x = y = 0
@@ -135,8 +117,8 @@ class FeatureMatching:
         #     print(dst_corners[i][0][1])
         #     area += (dst_corners[i][0][0] * dst_corners[next_i][0][1] - dst_corners[i][0][1] * dst_corners[next_i][0][
         #         0]) / 2.
-        # 如果面積太小，將它排除
-        if area < np.prod(shape_train) / 16.:
+        # 如果面積太大或太小，將它排除
+        if area < np.prod(shape_train) / 16. or area > np.prod(shape_train) / 2.:
             self.num_frames_no_success += 1
             return False, x, y
 
@@ -181,14 +163,15 @@ class FeatureMatching:
         plt.imshow(frame)
 
         img_dst2 = cv2.polylines(frame, [np.int32(dst_corners)], True, (55,255,155), 5, cv2.LINE_AA)
-        #mark the center point
+        # mark the picture's center point
         (h, w) = img_dst2.shape[:2]
         center = (w // 2, h // 2)
         cv2.circle(img_dst2, center, 10, (255, 0, 0), -1)
 
-        #mark the position point
+        # mark the position point(Splicing comparison chart)
         p_center = (np.int32(dst_corners[0][0][0]) + ((np.int32(dst_corners[2][0][0]) - np.int32(dst_corners[0][0][0])) // 2),
                     np.int32(dst_corners[0][0][1]) + ((np.int32(dst_corners[2][0][1]) - np.int32(dst_corners[0][0][1])) // 2))
+        # mark the comparison chart's center point
         cv2.circle(img_dst2, p_center, 10, (0, 0, 255), -1)
 
         #draw the line
@@ -215,12 +198,4 @@ class FeatureMatching:
         plt.show(block=False)
         plt.pause(1)
 
-        #img_center = self._center_keypoints(frame, key_train, good_matches)
-        #plt.imshow(img_center)
-        #plt.show()
-
-        # 轉換成正面視角
-        #img_front = self._frontal_keypoints(frame, Hinv)
-        #plt.imshow(img_front)
-        #plt.show()
         return True, x, y#, size
