@@ -1,41 +1,48 @@
 https://github.com/fcu-d0449199/DroneTopic
 
-�ꭸ�{���Gopencv_streaming+ dronekit
-����test.py���˸m�����[�]�ṳ�Y���p���s���W�����A�ݦ�SITL���ҰʡC
-(�����ṳ��y�A���rpi�į���ӡC)
+實飛程式：opencv_streaming+ dronekit
+執行test.py→裝置必須架設攝像頭→如未連結上飛機，需有SITL方能啟動。
+(隱藏攝像串流，減少rpi效能消耗。)
 
-�����ΡGopencv_streaming+ dronekit_DEMO
-��¹q���s��Mission Planner�Y�i(TCP, 921600, port=127.0.0.1, 5763)�A����ܥX�ṳ��y�C
+模擬用：opencv_streaming+ dronekit_DEMO
+單純電腦連結Mission Planner即可(TCP, 921600, port=127.0.0.1, 5763)，並顯示出攝像串流。
 
-�i�ܥΡGopencv_streaming+ dronekit_PLAY
-�ṳ���Y�����A�D�n�Q�ΤU�⤽���p��X�{���B���]�ꭸ���סA��������ѡ�MissionPlan�ե���m�A�è�F���]�ꭸ����(�w�]5����)����ܸ�T�]�t�{���������B��ڤ��ذ��B�����ݫe��M���k���ʦh�֤����A�P���ҩ��e�z�ʧ@�������ýᤩ�~��s�A���U�~���ư���C
-�� �J�Z = ((���Ϲ�e %��) ��) / ��ڼйv�e
-�� �����Z�� = (��ڼйv�e �J�Z) / (���Ϲ�e %��)
-(�Ѧ�:http://python.jobbole.com/84378/)
+展示用：opencv_streaming+ dronekit_PLAY
+攝像機即飛機，主要利用下兩公式計算出現場、假設實飛高度，拍攝→辨識→MissionPlan校正位置，並到達假設實飛高度(預設5公尺)→顯示資訊包含現場公分高、實際公尺高、水平需前後和左右移動多少公分，同時證明前述動作均完成並賦予繼續鈕，按下才重複執行。
+● 焦距 = ((比對圖實寬 %數) 高) / 實際標靶寬
+● 模擬距離 = (實際標靶寬 焦距) / (比對圖實寬 %數)
+(參考:http://python.jobbole.com/84378/)
 
-�w���ʴ��աGTest_TakeOffAndLand.py
-��a�_��10m�C
+安全性測試：Test_TakeOffAndLand.py
+原地起降10m。
 
-�ª��Q�k�G
-�w�]��a�W��5���ءA�ö}�l���ե��C�p�Ĥ@���˴����L�k���ؼСA�������W��2�������|(�@���[1����)�A������˴�5�������ѡAreturn to home�I
-1.���`�ܤ��˴�5��(�C���ե��U��1����)
-2.�̰��W��7����
-3.��F�Ѿl2���خɡA�����ؼЬ����j�����߹�(Goal_2)
-4.�C���ե����Y��V�V�_�A�����ṳ�e��
-5.�O���Ҧ��ʧ@�s������r�ɡA�]�t�C��������e�������ɶ�������Ǹ��@���ɦW�x�s��.jpg��
+舊版想法：
+預設原地上升5公尺，並開始做校正。如第一次檢測都無法抓到目標，先給予上升2次的機會(一次加1公尺)，後持續檢測5次都失敗，return to home！
+1.正常至少檢測5次(每次校正下降1公尺)
+2.最高上限7公尺
+3.到達剩餘2公尺時，切換目標為較大的中心圖(Goal_2)
+4.每次校正機頭方向向北，後抓取攝像畫面
+5.記錄所有動作存取成文字檔，包含每次抓取之畫面紀錄時間後註明序號作為檔名儲存為.jpg檔
 
-�s���G
-�W�ɦ�20���ءA�]10���ؽd�򤺽T��ǽT�A�G�b�p�󵥩�10���ثe�J�ϥ��ʴ����\�A���O���C���ؤU���ο��Ѫ���10���ذ��A�T�w�Ҧ����S���\�A�~�ŧi���ѡI
-�B���װ��שҦ����Ϯw���[�J���ѡA�w�����פW���Ϲ��~�t�C
-�ǽT�w�q�����ϧί৹�㲾���v���Ϥ�(�k�X��m�������)�A�N����������I���T�A�ե��B�~�����׭p��]��ǡA���]�J�Z���@�P�����p�U�F�Ϥ��A�i�त���I���T�����׸��L�Ѧһ��ȡC
+新版：
+上升至20公尺，因10公尺範圍內確實準確，故在小於等於10公尺前既使未監測成功，仍保持每公尺下降及辨識直到10公尺高，確定所有均沒成功，才宣告失敗！
+且不論高度所有比對圖庫均加入辨識，預防高度上的圖像誤差。
+準確定義為比對圖形能完整移轉於影像圖中(吻合位置的正方形)，代表抓取中心點正確，勢必額外的高度計算也精準，假設焦距都一致的情況下；反之，可能中心點正確但高度較無參考價值。
 
 
 cf:
-�O�o�N�йv��(Goal_1.jpg�BGoal_2.jpg...)��ܰ���{���P�ؿ��U�I�I�I
+記得將標靶圖(Goal_1.jpg、Goal_2.jpg...)放至執行程式同目錄下！！！
 
-dronekit-python�U��
+dronekit-python下載
 cd ~
 git clone https://github.com/dronekit/dronekit-python.git
 cd ./dronekit-python
 python setup.py build
 python setup.py install
+
+連接rpi
+參考https://sites.google.com/site/raspberypishare0918/home/di-yi-ci-qi-dong/zhi-jie-lian-bi-dian
+後開啟wifi並連接，可下載VNC(Chrome擴充功能也有提供免費的網頁板)方便連線
+
+rpi install opencv3.4.1 (we use python2.7)
+參考https://www.jianshu.com/p/faecd1c60e25
