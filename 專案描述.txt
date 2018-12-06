@@ -56,3 +56,13 @@ rpi install opencv3.4.1 (we use python2.7)：
 rpi connect to plane:
 參考http://ardupilot.org/dev/docs/raspberry-pi-via-mavlink.html?fbclid=IwAR1brTgrCWlRyPUNtruIGkN96QmUXkCr9FuskBxNPBVMzTGnyAxzgL_ruRM
 為避免線路干擾→camera和rpi走usb;rpi和plane走wire;plane運用速傳915Hz提供資訊給筆電(MissionPlanner);筆電和rpi走wifi以執行python程式。
+
+遙控器對頻：
+1.按住遙控器後的F/S按鈕，注意左邊兩個開關都撥至下
+2.按住機內FrySKY的F/S按鈕，並開啟飛機電源(可利用use-micro線直接連接飛機，方便用延長線直接開電源就行了)
+影片https://www.youtube.com/watch?v=h46w54GVa_k
+參考https://www.dronetrest.com/t/iris-wont-arm-no-radio/394/2
+
+Pixhawk油門校正：
+目前碰過的問題有1.飛機遙控器解鎖後無怠速2.起步時並非四軸同步運轉而是輪序轉動時需要該校正協助。
+影片https://www.youtube.com/watch?v=nBhc4gZ5XmE
