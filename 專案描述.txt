@@ -33,16 +33,26 @@ https://github.com/fcu-d0449199/DroneTopic
 cf:
 記得將標靶圖(Goal_1.jpg、Goal_2.jpg...)放至執行程式同目錄下！！！
 
-dronekit-python下載
+dronekit-python(為3DR提供的API，可參照http://python.dronekit.io/)下載：
 cd ~
 git clone https://github.com/dronekit/dronekit-python.git
 cd ./dronekit-python
 python setup.py build
 python setup.py install
 
-連接rpi
-參考https://sites.google.com/site/raspberypishare0918/home/di-yi-ci-qi-dong/zhi-jie-lian-bi-dian
-後開啟wifi並連接，可下載VNC(Chrome擴充功能也有提供免費的網頁板)方便連線
+撰寫飛控程式中要注意的是除arm_and_takeoff()該副程式外其餘動作不可再加「vehicle.armed = True」該行程式──原因為第一次起飛時解鎖後後續就都就成功解鎖了，固可不必再多此一舉，且解鎖時會有個初始訊號，可能導致原有飛行數據都重新歸零，造成斷訊，甚至墜落(高度指令降為0)，該再確認一次的動作不會有任何保障及幫助的！額外註明，此解鎖API僅等同於遙控器上的解鎖，執行程式前務必手動解除實機鎖定方能正常運作。
 
-rpi install opencv3.4.1 (we use python2.7)
-參考https://www.jianshu.com/p/faecd1c60e25
+install Mission Planner(Windows):
+參考http://ardupilot.org/planner/docs/mission-planner-installation.html#install-mission-planner。
+
+筆電連接rpi：
+參考https://sites.google.com/site/r
+aspberypishare0918/home/di-yi-ci-qi-dong/zhi-jie-lian-bi-dian。
+後開啟wifi並連接，可下載VNC(Chrome擴充功能也有提供免費的網頁板(https://chrome.google.com/webstore/detail/vnc%C2%AE-viewer-for-google-ch/iabmpiboiopbgfabjmgeedhcmjenhbla))方便連線。
+
+rpi install opencv3.4.1 (we use python2.7)：
+參考https://www.jianshu.com/p/faecd1c60e25。
+
+rpi connect to plane:
+參考http://ardupilot.org/dev/docs/raspberry-pi-via-mavlink.html?fbclid=IwAR1brTgrCWlRyPUNtruIGkN96QmUXkCr9FuskBxNPBVMzTGnyAxzgL_ruRM
+為避免線路干擾→camera和rpi走usb;rpi和plane走wire;plane運用速傳915Hz提供資訊給筆電(MissionPlanner);筆電和rpi走wifi以執行python程式。
